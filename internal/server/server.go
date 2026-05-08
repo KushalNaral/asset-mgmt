@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/KushalNaral/asset-mgmt/internal/config"
 	"github.com/KushalNaral/asset-mgmt/internal/handler"
+	"github.com/KushalNaral/asset-mgmt/internal/ui"
 )
 
 // Server holds the HTTP server and dependencies.
@@ -43,6 +46,13 @@ func (s *Server) registerRoutes() {
 		// add your routes here
 		_ = json.NewEncoder
 	})
+
+	webDist, err := fs.Sub(ui.FS, "dist")
+	if err != nil {
+		s.logger.Error("failed to create web distribution filesystem", "error", err)
+		return
+	}
+	s.router.Handle("/*", spaHandler(webDist))
 }
 
 // Start starts the HTTP server and blocks until ctx is cancelled.
@@ -90,4 +100,29 @@ func slogMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
 			)
 		})
 	}
+}
+
+// spaHandler serves the SPA index.html for any non-API routes.
+func spaHandler(fsys fs.FS) http.Handler {
+	fileServer := http.FileServer(http.FS(fsys))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/")
+
+		// If root, serve index.html
+		if path == "" {
+			http.ServeFileFS(w, r, fsys, "index.html")
+			return
+		}
+
+		// Check if file exists
+		if _, err := fs.Stat(fsys, path); err != nil {
+			// Not a real file → SPA route
+			http.ServeFileFS(w, r, fsys, "index.html")
+			return
+		}
+
+		// Real file → serve normally
+		fileServer.ServeHTTP(w, r)
+	})
 }

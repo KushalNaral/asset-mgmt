@@ -13,6 +13,7 @@ run: ## Run the application
 
 build: ## Build binary to bin/$(APP_NAME)
 	@mkdir -p $(BUILD_DIR)
+	cd web && npm run build
 	CGO_ENABLED=0 go build -ldflags="-w -s" -o $(BINARY) ./cmd/main.go
 
 test: ## Run tests with race detection and coverage
