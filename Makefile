@@ -2,8 +2,11 @@ APP_NAME := asset-mgmt
 BUILD_DIR := bin
 BINARY := $(BUILD_DIR)/$(APP_NAME)
 
-.PHONY: run build test test-coverage lint fmt tidy \
+.PHONY: dev run build test test-coverage lint fmt tidy \
         docker-up docker-down docker-logs clean install-tools swagger
+
+dev: ## Run with live reload (air)
+	air
 
 run: ## Run the application
 	go run ./cmd/main.go
@@ -40,9 +43,10 @@ docker-logs: ## Follow app logs
 	docker compose logs -f app
 
 clean: ## Remove build artifacts
-	rm -rf $(BUILD_DIR)/ coverage.out coverage.html
+	rm -rf $(BUILD_DIR)/ tmp/ coverage.out coverage.html
 
 install-tools: ## Install dev tools
+	go install github.com/air-verse/air@latest
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	go install golang.org/x/tools/cmd/goimports@latest
 	go install github.com/swaggo/swag/cmd/swag@latest
