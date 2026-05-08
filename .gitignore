@@ -37,3 +37,6 @@ tmp/
 # Frontend
 web/node_modules/
 internal/ui/dist/
+
+ #Database
+asset-mgmt.db
